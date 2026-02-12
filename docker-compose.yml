@@ -4,6 +4,7 @@ services:
   # MongoDB Database
   mongodb:
     image: mongo:7
+    platform: ${DOCKER_PLATFORM:-}
     container_name: tagsphere-mongodb
     restart: unless-stopped
     environment:
@@ -29,6 +30,7 @@ services:
   # Backend API
   backend:
     build: ./backend
+    platform: ${DOCKER_PLATFORM:-}
     container_name: tagsphere-backend
     restart: unless-stopped
     depends_on:
@@ -61,6 +63,7 @@ services:
   # Frontend
   frontend:
     build: ./frontend
+    platform: ${DOCKER_PLATFORM:-}
     container_name: tagsphere-frontend
     restart: unless-stopped
     depends_on:
