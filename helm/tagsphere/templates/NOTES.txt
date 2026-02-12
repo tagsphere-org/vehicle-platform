@@ -1,0 +1,38 @@
+========================================
+  TagSphere deployed successfully!
+========================================
+
+Domain: {{ .Values.ingress.host }}
+
+Services:
+  - Frontend : {{ .Values.frontend.service.port }} ({{ .Values.frontend.replicaCount }} replicas)
+  - Backend  : {{ .Values.backend.service.port }} ({{ .Values.backend.replicaCount }} replicas)
+  - MongoDB  : {{ .Values.mongodb.service.port }} (StatefulSet, auth={{ .Values.mongodb.auth.enabled }})
+
+{{- if .Values.ingress.enabled }}
+
+Access your app at:
+  {{- if .Values.ingress.tls.enabled }}
+  https://{{ .Values.ingress.host }}
+  {{- else }}
+  http://{{ .Values.ingress.host }}
+  {{- end }}
+{{- else }}
+
+Port-forward to access locally:
+  kubectl port-forward svc/frontend 8080:80 -n {{ .Values.namespace }}
+  Then visit: http://localhost:8080
+{{- end }}
+
+Security:
+  - SecurityContext: runAsNonRoot on all pods
+  - NetworkPolicy: MongoDB only accessible from backend
+  - PodDisruptionBudget: minAvailable=1 for backend and frontend
+  - TLS: {{ if .Values.ingress.tls.enabled }}Enabled{{ else }}Disabled (enable for production!){{ end }}
+
+IMPORTANT: Provide real secrets at install time!
+  helm install tagsphere ./helm/tagsphere -n tagsphere \
+    --set backend.secrets.JWT_SECRET="your-real-secret" \
+    --set backend.secrets.ENCRYPTION_KEY="your-32-char-key-here!!" \
+    --set backend.secrets.OTP_API_KEY="your-otp-key" \
+    --set mongodb.auth.rootPassword="your-mongo-password"

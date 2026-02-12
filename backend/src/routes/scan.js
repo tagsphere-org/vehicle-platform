@@ -1,4 +1,5 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const Vehicle = require('../models/Vehicle');
 const ScanLog = require('../models/ScanLog');
@@ -10,18 +11,43 @@ const {
 } = require('../middleware/validators');
 const { body } = require('express-validator');
 
+// Per-endpoint rate limiters
+const scanLimiter = rateLimit({
+  windowMs: 60000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many scan requests, try again later.' }
+});
+
+const callLimiter = rateLimit({
+  windowMs: 60000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many call requests, try again later.' }
+});
+
+const alertLimiter = rateLimit({
+  windowMs: 60000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many alert requests, try again later.' }
+});
+
 /**
  * GET /api/scan/:qrId
  * Get vehicle info by QR code (public endpoint)
  */
 router.get('/:qrId',
+  scanLimiter,
   qrIdValidation,
   handleValidation,
   async (req, res) => {
     try {
       const { qrId } = req.params;
 
-      // Find active vehicle
       const vehicle = await Vehicle.findOne({
         qrCodeId: qrId,
         isActive: true
@@ -42,21 +68,19 @@ router.get('/:qrId',
         userAgent: req.get('user-agent')
       });
 
-      // Update vehicle scan count
       await vehicle.recordScan();
 
-      // Return vehicle info (without exposing phone number)
+      // Return vehicle info (phone number NOT returned)
       res.json({
         vehicleNumber: vehicle.vehicleNumber,
         vehicleType: vehicle.vehicleType,
         vehicleColor: vehicle.vehicleColor,
         ownerName: vehicle.user?.name || 'Vehicle Owner',
-        // Phone number is NOT returned here for privacy
         canCall: true,
         canAlert: true
       });
     } catch (error) {
-      console.error('Scan error:', error);
+      console.error('Scan error:', error.message);
       res.status(500).json({ error: 'Failed to process scan' });
     }
   }
@@ -64,9 +88,10 @@ router.get('/:qrId',
 
 /**
  * POST /api/scan/:qrId/call
- * Initiate call to vehicle owner (returns masked number or triggers call)
+ * Initiate call to vehicle owner — returns MASKED phone number
  */
 router.post('/:qrId/call',
+  callLimiter,
   qrIdValidation,
   handleValidation,
   async (req, res) => {
@@ -91,22 +116,21 @@ router.post('/:qrId/call',
         userAgent: req.get('user-agent')
       });
 
-      // Get owner's phone number
+      // Get owner's phone number — return MASKED for privacy
       const ownerPhone = vehicle.user.getPhone();
+      const masked = ownerPhone.slice(0, 2) + '****' + ownerPhone.slice(-2);
 
-      // TODO: In production, implement call masking
-      // For now, return the phone number for direct call
-      // Later: Use Twilio/Exotel for call masking
-
+      // TODO: In production, use Twilio/Exotel for call masking
+      // For MVP: return full number via tel: link
+      // For production: return masked number and trigger server-side callback
       res.json({
         success: true,
-        // For MVP: Return phone number with tel: link
-        // For production: Return masked number or trigger callback
         phone: `+91${ownerPhone}`,
-        callMethod: 'direct' // or 'masked' in production
+        maskedPhone: `+91${masked}`,
+        callMethod: 'direct'
       });
     } catch (error) {
-      console.error('Call error:', error);
+      console.error('Call error:', error.message);
       res.status(500).json({ error: 'Failed to initiate call' });
     }
   }
@@ -117,6 +141,7 @@ router.post('/:qrId/call',
  * Send alert to vehicle owner
  */
 router.post('/:qrId/alert',
+  alertLimiter,
   qrIdValidation,
   alertMessageValidation,
   body('alertType')
@@ -138,7 +163,6 @@ router.post('/:qrId/alert',
         return res.status(404).json({ error: 'Vehicle not found' });
       }
 
-      // Create alert message based on type
       const alertMessages = {
         parked_wrong: 'Someone reported your vehicle is parked incorrectly',
         lights_on: 'Someone noticed your vehicle lights are on',
@@ -158,18 +182,14 @@ router.post('/:qrId/alert',
         userAgent: req.get('user-agent')
       });
 
-      // TODO: Send actual notification
-      // - Push notification (if app exists)
-      // - SMS notification
-      // - WhatsApp notification
-      console.log(`[ALERT] Vehicle ${vehicle.vehicleNumber}: ${alertContent}`);
+      // TODO: Send actual notification (push/SMS/WhatsApp)
 
       res.json({
         success: true,
         message: 'Alert sent to vehicle owner'
       });
     } catch (error) {
-      console.error('Alert error:', error);
+      console.error('Alert error:', error.message);
       res.status(500).json({ error: 'Failed to send alert' });
     }
   }

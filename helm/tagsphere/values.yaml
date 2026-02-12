@@ -1,0 +1,101 @@
+# -- Global settings
+namespace: tagsphere
+
+# -- Docker image registry (override for private registries)
+imageRegistry: ""
+
+# -- Frontend (React + Nginx)
+frontend:
+  replicaCount: 2
+  image:
+    repository: tagsphere/frontend
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+# -- Backend (Node.js + Express)
+backend:
+  replicaCount: 2
+  image:
+    repository: tagsphere/backend
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 3000
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  env:
+    NODE_ENV: production
+    PORT: "3000"
+    JWT_EXPIRES_IN: "7d"
+    OTP_SERVICE: mock
+    OTP_SENDER_ID: TAGSPH
+    RATE_LIMIT_WINDOW_MS: "60000"
+    RATE_LIMIT_MAX_REQUESTS: "100"
+    FRONTEND_URL: "https://tagsphere.co.in"
+  # -- Sensitive values — OVERRIDE via --set or external-secrets. Never commit real values.
+  secrets:
+    JWT_SECRET: ""
+    ENCRYPTION_KEY: ""
+    OTP_API_KEY: ""
+
+# -- MongoDB
+mongodb:
+  replicaCount: 1
+  image:
+    repository: mongo
+    tag: "7"
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 27017
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1
+      memory: 2Gi
+  persistence:
+    enabled: true
+    storageClass: ""
+    size: 10Gi
+  auth:
+    enabled: true
+    rootUsername: tagsphere
+    rootPassword: ""
+    database: tagsphere
+
+# -- Ingress
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/limit-rps: "20"
+    nginx.ingress.kubernetes.io/limit-connections: "10"
+    nginx.ingress.kubernetes.io/proxy-body-size: "1m"
+    nginx.ingress.kubernetes.io/server-snippets: |
+      add_header X-Content-Type-Options "nosniff" always;
+      add_header X-Frame-Options "DENY" always;
+      add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+  host: tagsphere.co.in
+  tls:
+    enabled: true
+    secretName: tagsphere-tls

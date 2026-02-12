@@ -1,22 +1,26 @@
-FROM node:18-alpine
+FROM node:18-alpine AS build
 
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
 
-# Install dependencies
-RUN npm ci --only=production
+# --- Production stage ---
+FROM node:18-alpine
 
-# Copy source code
-COPY . .
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
-# Expose port
+WORKDIR /app
+
+# Copy only production dependencies from build stage
+COPY --from=build /app/node_modules ./node_modules
+COPY --chown=nodejs:nodejs . .
+
+USER nodejs
+
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
 
-# Start application
 CMD ["node", "src/index.js"]

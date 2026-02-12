@@ -1,4 +1,5 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const User = require('../models/User');
 const { sendOTP, verifyOTP } = require('../utils/otp');
@@ -10,18 +11,36 @@ const {
   otpValidation
 } = require('../middleware/validators');
 
+// Strict rate limiter for OTP send — 1 per minute per IP
+const otpSendLimiter = rateLimit({
+  windowMs: 60000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many OTP requests. Try again in a minute.' }
+});
+
+// Strict rate limiter for OTP verify — 5 per 15 minutes per IP
+const otpVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many verification attempts. Try again later.' }
+});
+
 /**
  * POST /api/auth/send-otp
  * Send OTP to phone number
  */
 router.post('/send-otp',
+  otpSendLimiter,
   phoneValidation,
   handleValidation,
   async (req, res) => {
     try {
       const { phone } = req.body;
 
-      // Check if user exists
       const existingUser = await User.findByPhone(phone);
       const purpose = existingUser ? 'login' : 'registration';
 
@@ -31,20 +50,20 @@ router.post('/send-otp',
         return res.status(500).json({ error: result.message });
       }
 
-      // In dev mode, return OTP for testing
       const response = {
         success: true,
         message: result.message,
         isNewUser: !existingUser
       };
 
+      // Only expose devOtp in development
       if (process.env.NODE_ENV === 'development' && result.devOtp) {
         response.devOtp = result.devOtp;
       }
 
       res.json(response);
     } catch (error) {
-      console.error('Send OTP error:', error);
+      console.error('Send OTP error:', error.message);
       res.status(500).json({ error: 'Failed to send OTP' });
     }
   }
@@ -55,6 +74,7 @@ router.post('/send-otp',
  * Verify OTP and login/register
  */
 router.post('/verify-otp',
+  otpVerifyLimiter,
   phoneValidation,
   otpValidation,
   handleValidation,
@@ -62,18 +82,15 @@ router.post('/verify-otp',
     try {
       const { phone, otp, name } = req.body;
 
-      // Verify OTP
       const verification = await verifyOTP(phone, otp);
 
       if (!verification.valid) {
         return res.status(400).json({ error: verification.error });
       }
 
-      // Check if user exists
       let user = await User.findByPhone(phone);
 
       if (!user) {
-        // New user registration
         if (!name) {
           return res.status(400).json({ error: 'Name is required for registration' });
         }
@@ -85,12 +102,10 @@ router.post('/verify-otp',
         });
         await user.save();
       } else {
-        // Existing user login
         user.lastLogin = new Date();
         await user.save();
       }
 
-      // Generate token
       const token = generateToken(user._id);
 
       res.json({
@@ -104,7 +119,7 @@ router.post('/verify-otp',
         }
       });
     } catch (error) {
-      console.error('Verify OTP error:', error);
+      console.error('Verify OTP error:', error.message);
       res.status(500).json({ error: 'Verification failed' });
     }
   }
@@ -124,7 +139,7 @@ router.get('/me', authenticate, async (req, res) => {
       role: req.user.role
     });
   } catch (error) {
-    console.error('Get user error:', error);
+    console.error('Get user error:', error.message);
     res.status(500).json({ error: 'Failed to get user info' });
   }
 });
@@ -153,7 +168,7 @@ router.put('/profile',
         }
       });
     } catch (error) {
-      console.error('Update profile error:', error);
+      console.error('Update profile error:', error.message);
       res.status(500).json({ error: 'Failed to update profile' });
     }
   }

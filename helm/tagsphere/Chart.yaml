@@ -1,0 +1,13 @@
+apiVersion: v2
+name: tagsphere
+description: TagSphere - QR-based vehicle contact platform
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - tagsphere
+  - qr
+  - vehicle
+home: https://tagsphere.co.in
+maintainers:
+  - name: Vinay Panwar

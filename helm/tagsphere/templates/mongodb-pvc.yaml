@@ -1,0 +1,1 @@
+{{/* PVC is managed by StatefulSet volumeClaimTemplates — this file is intentionally empty */}}
