@@ -1,0 +1,15 @@
+version: '3.8'
+
+# Development compose file - run with: docker-compose -f docker-compose.dev.yml up
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: tagsphere-mongodb-dev
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_dev_data:/data/db
+
+volumes:
+  mongodb_dev_data:

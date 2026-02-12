@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: tagsphere-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: tagsphere
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - tagsphere-network
+
+  # Backend API
+  backend:
+    build: ./backend
+    container_name: tagsphere-backend
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MONGODB_URI=mongodb://mongodb:27017/tagsphere
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost}
+    ports:
+      - "3000:3000"
+    networks:
+      - tagsphere-network
+
+  # Frontend
+  frontend:
+    build: ./frontend
+    container_name: tagsphere-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - tagsphere-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  tagsphere-network:
+    driver: bridge
