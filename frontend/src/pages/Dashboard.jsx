@@ -135,7 +135,7 @@ function Dashboard() {
           >
             <strong>{vehicle.vehicleNumber}:</strong>{' '}
             <span style={{ color: 'var(--primary)' }}>
-              tagsphere.in/v/{vehicle.qrCodeId}
+              tagsphere.co.in/v/{vehicle.qrCodeId}
             </span>
           </div>
         ))}

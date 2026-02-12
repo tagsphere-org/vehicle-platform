@@ -62,7 +62,7 @@ router.get('/stats', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Stats error:', error);
+    console.error('Stats error:', error.message);
     res.status(500).json({ error: 'Failed to get statistics' });
   }
 });
@@ -115,11 +115,11 @@ router.post('/qr-codes/generate',
         qrCodes: qrCodes.map(qr => ({
           qrId: qr.qrId,
           activationPin: qr.activationPin,
-          url: `https://tagsphere.in/v/${qr.qrId}`
+          url: `https://tagsphere.co.in/v/${qr.qrId}`
         }))
       });
     } catch (error) {
-      console.error('Generate QR error:', error);
+      console.error('Generate QR error:', error.message);
       res.status(500).json({ error: 'Failed to generate QR codes' });
     }
   }
@@ -148,7 +148,8 @@ router.get('/qr-codes',
           .sort({ createdAt: -1 })
           .skip((page - 1) * limit)
           .limit(parseInt(limit))
-          .select('-__v'),
+          .select('-__v')
+          .lean(),
         QRCode.countDocuments(filter)
       ]);
 
@@ -162,7 +163,7 @@ router.get('/qr-codes',
         }
       });
     } catch (error) {
-      console.error('List QR codes error:', error);
+      console.error('List QR codes error:', error.message);
       res.status(500).json({ error: 'Failed to list QR codes' });
     }
   }
@@ -185,7 +186,8 @@ router.get('/users',
           .sort({ createdAt: -1 })
           .skip((page - 1) * limit)
           .limit(parseInt(limit))
-          .select('-phone -phoneHash -__v'),
+          .select('-phone -phoneHash -__v')
+          .lean(),
         User.countDocuments()
       ]);
 
@@ -206,7 +208,7 @@ router.get('/users',
         }
       });
     } catch (error) {
-      console.error('List users error:', error);
+      console.error('List users error:', error.message);
       res.status(500).json({ error: 'Failed to list users' });
     }
   }
@@ -236,7 +238,8 @@ router.get('/vehicles',
           .sort({ createdAt: -1 })
           .skip((page - 1) * limit)
           .limit(parseInt(limit))
-          .select('-__v'),
+          .select('-__v')
+          .lean(),
         Vehicle.countDocuments(filter)
       ]);
 
@@ -259,7 +262,7 @@ router.get('/vehicles',
         }
       });
     } catch (error) {
-      console.error('List vehicles error:', error);
+      console.error('List vehicles error:', error.message);
       res.status(500).json({ error: 'Failed to list vehicles' });
     }
   }
@@ -287,7 +290,8 @@ router.get('/scan-logs',
           .sort({ createdAt: -1 })
           .skip((page - 1) * limit)
           .limit(parseInt(limit))
-          .select('-__v'),
+          .select('-__v')
+          .lean(),
         ScanLog.countDocuments(filter)
       ]);
 
@@ -301,7 +305,7 @@ router.get('/scan-logs',
         }
       });
     } catch (error) {
-      console.error('List scan logs error:', error);
+      console.error('List scan logs error:', error.message);
       res.status(500).json({ error: 'Failed to list scan logs' });
     }
   }

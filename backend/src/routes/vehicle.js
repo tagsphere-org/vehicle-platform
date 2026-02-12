@@ -1,4 +1,5 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const Vehicle = require('../models/Vehicle');
 const QRCode = require('../models/QRCode');
@@ -11,11 +12,29 @@ const {
 } = require('../middleware/validators');
 const { body, param } = require('express-validator');
 
+// Rate limiters for vehicle operations
+const registerLimiter = rateLimit({
+  windowMs: 60000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many registration attempts, try again later.' }
+});
+
+const writeLimiter = rateLimit({
+  windowMs: 60000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, try again later.' }
+});
+
 /**
  * POST /api/vehicle/register
  * Register a new vehicle with QR code
  */
 router.post('/register',
+  registerLimiter,
   authenticate,
   vehicleNumberValidation,
   body('qrId').trim().notEmpty().withMessage('QR code ID is required'),
@@ -45,7 +64,7 @@ router.post('/register',
       const existingVehicle = await Vehicle.findOne({
         vehicleNumber,
         isActive: true
-      });
+      }).lean();
 
       if (existingVehicle) {
         return res.status(400).json({
@@ -75,7 +94,7 @@ router.post('/register',
         }
       });
     } catch (error) {
-      console.error('Vehicle registration error:', error);
+      console.error('Vehicle registration error:', error.message);
       res.status(500).json({ error: 'Failed to register vehicle' });
     }
   }
@@ -90,7 +109,7 @@ router.get('/my-vehicles', authenticate, async (req, res) => {
     const vehicles = await Vehicle.find({
       user: req.user._id,
       isActive: true
-    }).sort({ createdAt: -1 });
+    }).sort({ createdAt: -1 }).lean();
 
     res.json({
       vehicles: vehicles.map(v => ({
@@ -105,7 +124,7 @@ router.get('/my-vehicles', authenticate, async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('Get vehicles error:', error);
+    console.error('Get vehicles error:', error.message);
     res.status(500).json({ error: 'Failed to get vehicles' });
   }
 });
@@ -123,7 +142,7 @@ router.get('/:id',
       const vehicle = await Vehicle.findOne({
         _id: req.params.id,
         user: req.user._id
-      });
+      }).lean();
 
       if (!vehicle) {
         return res.status(404).json({ error: 'Vehicle not found' });
@@ -141,7 +160,7 @@ router.get('/:id',
         createdAt: vehicle.createdAt
       });
     } catch (error) {
-      console.error('Get vehicle error:', error);
+      console.error('Get vehicle error:', error.message);
       res.status(500).json({ error: 'Failed to get vehicle' });
     }
   }
@@ -152,6 +171,7 @@ router.get('/:id',
  * Update vehicle details
  */
 router.put('/:id',
+  writeLimiter,
   authenticate,
   param('id').isMongoId().withMessage('Invalid vehicle ID'),
   vehicleTypeValidation,
@@ -185,7 +205,7 @@ router.put('/:id',
         }
       });
     } catch (error) {
-      console.error('Update vehicle error:', error);
+      console.error('Update vehicle error:', error.message);
       res.status(500).json({ error: 'Failed to update vehicle' });
     }
   }
@@ -196,6 +216,7 @@ router.put('/:id',
  * Deactivate vehicle (soft delete)
  */
 router.delete('/:id',
+  writeLimiter,
   authenticate,
   param('id').isMongoId().withMessage('Invalid vehicle ID'),
   handleValidation,
@@ -226,7 +247,7 @@ router.delete('/:id',
         message: 'Vehicle deactivated'
       });
     } catch (error) {
-      console.error('Delete vehicle error:', error);
+      console.error('Delete vehicle error:', error.message);
       res.status(500).json({ error: 'Failed to deactivate vehicle' });
     }
   }

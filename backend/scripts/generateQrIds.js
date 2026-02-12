@@ -52,7 +52,7 @@ async function main() {
     // Generate CSV output
     const csvHeader = 'QR_ID,Activation_PIN,URL\n';
     const csvRows = qrCodes.map(qr =>
-      `${qr.qrId},${qr.activationPin},https://tagsphere.in/v/${qr.qrId}`
+      `${qr.qrId},${qr.activationPin},https://tagsphere.co.in/v/${qr.qrId}`
     ).join('\n');
 
     const outputDir = path.join(__dirname, '../output');
@@ -70,7 +70,7 @@ async function main() {
     console.log('\nSample QR codes:');
     console.log('================');
     qrCodes.slice(0, 5).forEach(qr => {
-      console.log(`${qr.qrId} | PIN: ${qr.activationPin} | https://tagsphere.in/v/${qr.qrId}`);
+      console.log(`${qr.qrId} | PIN: ${qr.activationPin} | https://tagsphere.co.in/v/${qr.qrId}`);
     });
 
   } catch (error) {

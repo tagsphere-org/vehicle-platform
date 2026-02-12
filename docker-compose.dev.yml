@@ -1,15 +1,32 @@
 version: '3.8'
 
-# Development compose file - run with: docker-compose -f docker-compose.dev.yml up
+# Development compose file
+# Usage: docker-compose -f docker-compose.dev.yml up -d
 
 services:
   mongodb:
     image: mongo:7
     container_name: tagsphere-mongodb-dev
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: dev
+      MONGO_INITDB_ROOT_PASSWORD: devpassword
+      MONGO_INITDB_DATABASE: tagsphere
     ports:
       - "27017:27017"
     volumes:
       - mongodb_dev_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
 
 volumes:
   mongodb_dev_data:

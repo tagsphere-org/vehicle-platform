@@ -55,9 +55,11 @@ otpSchema.methods.verify = function(inputOtp) {
   this.attempts += 1;
 
   // Timing-safe comparison to prevent timing attacks
-  const otpBuffer = Buffer.from(this.otp.padEnd(6, '0'));
-  const inputBuffer = Buffer.from(String(inputOtp).padEnd(6, '0'));
-  if (otpBuffer.length !== inputBuffer.length || !crypto.timingSafeEqual(otpBuffer, inputBuffer)) {
+  const stored = Buffer.alloc(6, 0);
+  const input = Buffer.alloc(6, 0);
+  stored.write(String(this.otp).slice(0, 6));
+  input.write(String(inputOtp).slice(0, 6));
+  if (!crypto.timingSafeEqual(stored, input)) {
     return { valid: false, error: 'Invalid OTP' };
   }
 

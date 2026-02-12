@@ -116,16 +116,15 @@ router.post('/:qrId/call',
         userAgent: req.get('user-agent')
       });
 
-      // Get owner's phone number — return MASKED for privacy
+      // Get owner's phone number — masked for privacy
       const ownerPhone = vehicle.user.getPhone();
       const masked = ownerPhone.slice(0, 2) + '****' + ownerPhone.slice(-2);
 
       // TODO: In production, use Twilio/Exotel for call masking
-      // For MVP: return full number via tel: link
-      // For production: return masked number and trigger server-side callback
+      // For now: return tel: link for direct call
       res.json({
         success: true,
-        phone: `+91${ownerPhone}`,
+        phone: `tel:+91${ownerPhone}`,
         maskedPhone: `+91${masked}`,
         callMethod: 'direct'
       });
