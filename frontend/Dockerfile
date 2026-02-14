@@ -1,4 +1,15 @@
-FROM node:18-alpine AS build
+FROM node:22-alpine AS build
+
+ARG VITE_FIREBASE_API_KEY
+ARG VITE_FIREBASE_AUTH_DOMAIN
+ARG VITE_FIREBASE_PROJECT_ID
+ARG VITE_FIREBASE_APP_ID
+ARG VITE_API_URL
+ARG VITE_ENABLE_FIREBASE
+ARG VITE_ENABLE_RAZORPAY
+ARG VITE_ENABLE_NOTIFICATIONS
+ARG VITE_ENABLE_CALLS
+ARG VITE_FIREBASE_VAPID_KEY
 
 WORKDIR /app
 
@@ -30,6 +41,6 @@ USER nginx
 EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:80/ || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:80/ || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]

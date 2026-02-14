@@ -1,4 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <circle cx="50" cy="50" r="45" fill="#2563eb"/>
-  <text x="50" y="65" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="white" text-anchor="middle">T</text>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded square background -->
+  <rect x="4" y="4" width="92" height="92" rx="20" ry="20" fill="url(#bg)"/>
+  <!-- 3x3 QR grid dots -->
+  <rect x="18" y="18" width="14" height="14" rx="3" fill="rgba(255,255,255,0.9)"/>
+  <rect x="43" y="18" width="14" height="14" rx="3" fill="rgba(255,255,255,0.9)"/>
+  <rect x="68" y="18" width="14" height="14" rx="3" fill="rgba(255,255,255,0.9)"/>
+  <rect x="18" y="43" width="14" height="14" rx="3" fill="rgba(255,255,255,0.9)"/>
+  <rect x="43" y="43" width="14" height="14" rx="3" fill="rgba(255,255,255,0.5)"/>
+  <rect x="68" y="43" width="14" height="14" rx="3" fill="rgba(255,255,255,0.9)"/>
+  <rect x="18" y="68" width="14" height="14" rx="3" fill="rgba(255,255,255,0.9)"/>
+  <rect x="43" y="68" width="14" height="14" rx="3" fill="rgba(255,255,255,0.9)"/>
+  <rect x="68" y="68" width="14" height="14" rx="3" fill="rgba(255,255,255,0.9)"/>
+  <!-- Location pin overlay (centered) -->
+  <path d="M50 34 C42 34 36 40 36 47.5 C36 58 50 72 50 72 C50 72 64 58 64 47.5 C64 40 58 34 50 34Z" fill="none" stroke="white" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="50" cy="47.5" r="5" fill="white"/>
 </svg>

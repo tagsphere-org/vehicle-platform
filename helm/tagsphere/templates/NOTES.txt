@@ -34,5 +34,7 @@ IMPORTANT: Provide real secrets at install time!
   helm install tagsphere ./helm/tagsphere -n tagsphere \
     --set backend.secrets.JWT_SECRET="your-real-secret" \
     --set backend.secrets.ENCRYPTION_KEY="your-32-char-key-here!!" \
-    --set backend.secrets.OTP_API_KEY="your-otp-key" \
+    --set backend.secrets.FIREBASE_PROJECT_ID="your-project-id" \
+    --set backend.secrets.FIREBASE_CLIENT_EMAIL="your-service-account-email" \
+    --set backend.secrets.FIREBASE_PRIVATE_KEY="your-private-key" \
     --set mongodb.auth.rootPassword="your-mongo-password"

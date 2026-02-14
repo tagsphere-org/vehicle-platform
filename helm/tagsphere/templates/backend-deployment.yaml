@@ -60,11 +60,35 @@ spec:
                 secretKeyRef:
                   name: backend-secret
                   key: ENCRYPTION_KEY
-            - name: OTP_API_KEY
+            {{- if eq .Values.backend.env.ENABLE_FIREBASE "true" }}
+            - name: FIREBASE_PROJECT_ID
               valueFrom:
                 secretKeyRef:
                   name: backend-secret
-                  key: OTP_API_KEY
+                  key: FIREBASE_PROJECT_ID
+            - name: FIREBASE_CLIENT_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secret
+                  key: FIREBASE_CLIENT_EMAIL
+            - name: FIREBASE_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secret
+                  key: FIREBASE_PRIVATE_KEY
+            {{- end }}
+            {{- if eq .Values.backend.env.ENABLE_RAZORPAY "true" }}
+            - name: RAZORPAY_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secret
+                  key: RAZORPAY_KEY_ID
+            - name: RAZORPAY_KEY_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secret
+                  key: RAZORPAY_KEY_SECRET
+            {{- end }}
           resources:
             {{- toYaml .Values.backend.resources | nindent 12 }}
           livenessProbe:

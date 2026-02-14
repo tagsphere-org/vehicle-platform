@@ -13,6 +13,11 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  firebaseUid: {
+    type: String,
+    sparse: true,
+    unique: true
+  },
   phoneHash: {
     type: String,
     required: true,
@@ -31,6 +36,16 @@ const userSchema = new mongoose.Schema({
     enum: ['user', 'admin'],
     default: 'user'
   },
+  emergencyContact: {
+    name: { type: String, trim: true, maxlength: 100 },
+    phoneHash: { type: String },
+    phoneEncrypted: { type: String }
+  },
+  fcmTokens: [{
+    token: { type: String, required: true },
+    platform: { type: String, enum: ['web', 'android', 'ios'], default: 'web' },
+    createdAt: { type: Date, default: Date.now }
+  }],
   lastLogin: {
     type: Date
   }
@@ -38,8 +53,8 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Encrypt phone before saving
-userSchema.pre('save', function(next) {
+// Encrypt phone before validation so phoneHash is set for required check
+userSchema.pre('validate', function(next) {
   if (this.isModified('phone')) {
     // Store hash for lookups, encrypted value for retrieval
     const crypto = require('crypto');
@@ -52,6 +67,19 @@ userSchema.pre('save', function(next) {
 // Method to get decrypted phone
 userSchema.methods.getPhone = function() {
   return decrypt(this.phone);
+};
+
+// Set emergency phone (encrypts + hashes)
+userSchema.methods.setEmergencyPhone = function(phone) {
+  const crypto = require('crypto');
+  this.emergencyContact.phoneHash = crypto.createHash('sha256').update(phone).digest('hex');
+  this.emergencyContact.phoneEncrypted = encrypt(phone);
+};
+
+// Get decrypted emergency phone
+userSchema.methods.getEmergencyPhone = function() {
+  if (!this.emergencyContact?.phoneEncrypted) return null;
+  return decrypt(this.emergencyContact.phoneEncrypted);
 };
 
 // Static method to find by phone

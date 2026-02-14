@@ -1,17 +1,17 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 function Login() {
   const navigate = useNavigate()
-  const { sendOtp, login } = useAuth()
+  const { sendOtp, verifyOtp, authMode } = useAuth()
 
   const [step, setStep] = useState('phone') // phone, otp
   const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [devOtp, setDevOtp] = useState('') // For development
+  const confirmationResultRef = useRef(null)
 
   const handleSendOtp = async (e) => {
     e.preventDefault()
@@ -19,22 +19,17 @@ function Login() {
     setLoading(true)
 
     try {
-      const result = await sendOtp(phone)
-
-      if (result.isNewUser) {
-        // Redirect to registration
-        navigate('/register', { state: { phone } })
-        return
-      }
-
-      // Show dev OTP in development
-      if (result.devOtp) {
-        setDevOtp(result.devOtp)
-      }
-
+      const confirmationResult = await sendOtp(phone)
+      confirmationResultRef.current = confirmationResult
       setStep('otp')
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to send OTP')
+      if (err.code === 'auth/too-many-requests') {
+        setError('Too many attempts. Please try again later.')
+      } else if (err.code === 'auth/invalid-phone-number') {
+        setError('Invalid phone number.')
+      } else {
+        setError(err.message || 'Failed to send OTP')
+      }
     } finally {
       setLoading(false)
     }
@@ -46,10 +41,19 @@ function Login() {
     setLoading(true)
 
     try {
-      await login(phone, otp)
-      navigate('/dashboard')
+      const { isNewUser } = await verifyOtp(confirmationResultRef.current, otp)
+
+      if (isNewUser) {
+        navigate('/register', { state: { phone, verified: true } })
+      } else {
+        navigate('/dashboard')
+      }
     } catch (err) {
-      setError(err.response?.data?.error || 'Invalid OTP')
+      if (err.code === 'auth/invalid-verification-code') {
+        setError('Invalid OTP. Please try again.')
+      } else {
+        setError(err.response?.data?.error || err.message || 'Verification failed')
+      }
     } finally {
       setLoading(false)
     }
@@ -63,27 +67,40 @@ function Login() {
           <p className="card-subtitle">Enter your phone number to continue</p>
         </div>
 
-        {error && <div className="alert alert-error">{error}</div>}
-
-        {devOtp && (
-          <div className="alert alert-info">
-            <strong>Dev Mode:</strong> Your OTP is {devOtp}
+        {authMode === 'mock' && (
+          <div className="alert" style={{ background: 'var(--bg-secondary, #fef3c7)', border: '1px solid #f59e0b', color: '#92400e', marginBottom: '1rem' }}>
+            Dev Mode — Any 6-digit OTP will work
           </div>
         )}
+
+        {error && <div className="alert alert-error">{error}</div>}
 
         {step === 'phone' ? (
           <form onSubmit={handleSendOtp}>
             <div className="form-group">
               <label className="form-label">Phone Number</label>
-              <input
-                type="tel"
-                className="form-input"
-                placeholder="9876543210"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                maxLength={10}
-                required
-              />
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <span style={{
+                  padding: '0.75rem 0.75rem',
+                  background: 'var(--bg-secondary, #f3f4f6)',
+                  border: '1px solid var(--border, #d1d5db)',
+                  borderRadius: 'var(--radius, 0.5rem)',
+                  fontWeight: 600,
+                  fontSize: '0.95rem',
+                  whiteSpace: 'nowrap',
+                  userSelect: 'none'
+                }}>+91</span>
+                <input
+                  type="tel"
+                  className="form-input"
+                  style={{ flex: 1, marginBottom: 0 }}
+                  placeholder="9876543210"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  maxLength={10}
+                  required
+                />
+              </div>
             </div>
 
             <button
@@ -127,13 +144,15 @@ function Login() {
               onClick={() => {
                 setStep('phone')
                 setOtp('')
-                setDevOtp('')
+                setError('')
               }}
             >
               Change Number
             </button>
           </form>
         )}
+
+        {authMode === 'firebase' && <div id="recaptcha-container"></div>}
 
         <p className="text-center mt-3" style={{ color: 'var(--text-secondary)' }}>
           Don't have an account?{' '}

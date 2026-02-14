@@ -35,6 +35,13 @@ const vehicleNumberValidation = body('vehicleNumber')
   .matches(/^[A-Z]{2}[0-9]{1,2}[A-Z]{0,3}[0-9]{4}$/)
   .withMessage('Invalid vehicle number format (e.g., MH12AB1234)');
 
+// Vehicle number param validation (for URL params)
+const vehicleNumberParamValidation = param('vehicleNumber')
+  .trim()
+  .toUpperCase()
+  .matches(/^[A-Z]{2}[0-9]{1,2}[A-Z]{0,3}[0-9]{4}$/)
+  .withMessage('Invalid vehicle number format (e.g., MH12AB1234)');
+
 // QR ID validation
 const qrIdValidation = param('qrId')
   .trim()
@@ -42,6 +49,12 @@ const qrIdValidation = param('qrId')
   .withMessage('Invalid QR code')
   .matches(/^[123456789ABCDEFGHJKLMNPQRSTUVWXYZ]{7}$/)
   .withMessage('Invalid QR code format');
+
+// Firebase ID token validation
+const firebaseTokenValidation = body('idToken')
+  .isString()
+  .notEmpty()
+  .withMessage('Firebase ID token is required');
 
 // OTP validation
 const otpValidation = body('otp')
@@ -77,8 +90,10 @@ module.exports = {
   phoneValidation,
   nameValidation,
   vehicleNumberValidation,
+  vehicleNumberParamValidation,
   qrIdValidation,
   otpValidation,
+  firebaseTokenValidation,
   pinValidation,
   alertMessageValidation,
   vehicleTypeValidation

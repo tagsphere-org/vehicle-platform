@@ -10,11 +10,13 @@ data:
   NODE_ENV: {{ .Values.backend.env.NODE_ENV | quote }}
   PORT: {{ .Values.backend.env.PORT | quote }}
   JWT_EXPIRES_IN: {{ .Values.backend.env.JWT_EXPIRES_IN | quote }}
-  OTP_SERVICE: {{ .Values.backend.env.OTP_SERVICE | quote }}
-  OTP_SENDER_ID: {{ .Values.backend.env.OTP_SENDER_ID | quote }}
   RATE_LIMIT_WINDOW_MS: {{ .Values.backend.env.RATE_LIMIT_WINDOW_MS | quote }}
   RATE_LIMIT_MAX_REQUESTS: {{ .Values.backend.env.RATE_LIMIT_MAX_REQUESTS | quote }}
   FRONTEND_URL: {{ .Values.backend.env.FRONTEND_URL | quote }}
+  ENABLE_FIREBASE: {{ .Values.backend.env.ENABLE_FIREBASE | quote }}
+  ENABLE_RAZORPAY: {{ .Values.backend.env.ENABLE_RAZORPAY | quote }}
+  ENABLE_NOTIFICATIONS: {{ .Values.backend.env.ENABLE_NOTIFICATIONS | quote }}
+  ENABLE_CALLS: {{ .Values.backend.env.ENABLE_CALLS | quote }}
   {{- if .Values.mongodb.auth.enabled }}
   MONGODB_URI: "mongodb://$(MONGO_USER):$(MONGO_PASS)@mongodb-0.mongodb:{{ .Values.mongodb.service.port }}/{{ .Values.mongodb.auth.database }}?authSource=admin&maxPoolSize=50&minPoolSize=10&maxIdleTimeMS=30000"
   {{- else }}

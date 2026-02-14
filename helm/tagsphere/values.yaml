@@ -42,9 +42,11 @@ backend:
   env:
     NODE_ENV: production
     PORT: "3000"
+    ENABLE_FIREBASE: "true"
+    ENABLE_RAZORPAY: "false"
+    ENABLE_NOTIFICATIONS: "false"
+    ENABLE_CALLS: "false"
     JWT_EXPIRES_IN: "7d"
-    OTP_SERVICE: mock
-    OTP_SENDER_ID: TAGSPH
     RATE_LIMIT_WINDOW_MS: "60000"
     RATE_LIMIT_MAX_REQUESTS: "100"
     FRONTEND_URL: "https://tagsphere.co.in"
@@ -52,7 +54,11 @@ backend:
   secrets:
     JWT_SECRET: ""
     ENCRYPTION_KEY: ""
-    OTP_API_KEY: ""
+    FIREBASE_PROJECT_ID: ""
+    FIREBASE_CLIENT_EMAIL: ""
+    FIREBASE_PRIVATE_KEY: ""
+    RAZORPAY_KEY_ID: ""
+    RAZORPAY_KEY_SECRET: ""
 
 # -- MongoDB
 mongodb:

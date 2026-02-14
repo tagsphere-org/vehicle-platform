@@ -10,10 +10,16 @@ const scanLogSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Vehicle'
   },
+  // How the vehicle was looked up
+  lookupSource: {
+    type: String,
+    enum: ['qr', 'number'],
+    default: 'qr'
+  },
   // Action taken by scanner
   action: {
     type: String,
-    enum: ['view', 'call', 'alert'],
+    enum: ['view', 'call', 'alert', 'emergency_contact_request'],
     default: 'view'
   },
   // Scanner info (anonymized)

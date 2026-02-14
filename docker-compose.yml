@@ -43,6 +43,15 @@ services:
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:?Set ENCRYPTION_KEY in .env}
       - FRONTEND_URL=${FRONTEND_URL:-https://tagsphere.co.in}
       - RATE_LIMIT_MAX_REQUESTS=100
+      - ENABLE_FIREBASE=${ENABLE_FIREBASE:-true}
+      - ENABLE_RAZORPAY=${ENABLE_RAZORPAY:-false}
+      - ENABLE_NOTIFICATIONS=${ENABLE_NOTIFICATIONS:-false}
+      - ENABLE_CALLS=${ENABLE_CALLS:-false}
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
     ports:
       - "3000:3000"
     networks:
@@ -61,7 +70,19 @@ services:
 
   # Frontend
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_FIREBASE_API_KEY: ${VITE_FIREBASE_API_KEY}
+        VITE_FIREBASE_AUTH_DOMAIN: ${VITE_FIREBASE_AUTH_DOMAIN}
+        VITE_FIREBASE_PROJECT_ID: ${VITE_FIREBASE_PROJECT_ID}
+        VITE_FIREBASE_APP_ID: ${VITE_FIREBASE_APP_ID}
+        VITE_API_URL: ${VITE_API_URL:-/api}
+        VITE_ENABLE_FIREBASE: ${VITE_ENABLE_FIREBASE:-true}
+        VITE_ENABLE_RAZORPAY: ${VITE_ENABLE_RAZORPAY:-false}
+        VITE_ENABLE_NOTIFICATIONS: ${VITE_ENABLE_NOTIFICATIONS:-false}
+        VITE_ENABLE_CALLS: ${VITE_ENABLE_CALLS:-false}
+        VITE_FIREBASE_VAPID_KEY: ${VITE_FIREBASE_VAPID_KEY:-}
     container_name: tagsphere-frontend
     restart: unless-stopped
     depends_on:

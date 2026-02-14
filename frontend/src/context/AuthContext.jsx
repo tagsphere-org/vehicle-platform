@@ -1,14 +1,18 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
+import features from '../config/features'
+import { auth as firebaseAuth } from '../config/firebase'
 import api from '../services/api'
 
 const AuthContext = createContext(null)
 
+const authMode = features.firebase ? 'firebase' : 'mock'
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const recaptchaVerifierRef = useRef(null)
 
   useEffect(() => {
-    // Check if user is logged in on mount
     const token = localStorage.getItem('token')
     if (token) {
       fetchUser()
@@ -28,36 +32,103 @@ export function AuthProvider({ children }) {
     }
   }
 
-  const login = async (phone, otp, name = null) => {
+  // --- Firebase mode ---
+  const setupRecaptcha = (containerId) => {
+    if (recaptchaVerifierRef.current) {
+      try { recaptchaVerifierRef.current.clear() } catch (_) {}
+      recaptchaVerifierRef.current = null
+    }
+
+    const container = document.getElementById(containerId)
+    if (container) {
+      container.innerHTML = ''
+    }
+
+    // Dynamic import already happened at module level via config/firebase.js
+    // RecaptchaVerifier and signInWithPhoneNumber loaded on demand below
+    return import('firebase/auth').then(({ RecaptchaVerifier }) => {
+      recaptchaVerifierRef.current = new RecaptchaVerifier(firebaseAuth, containerId, {
+        size: 'invisible',
+        callback: () => {},
+      })
+      return recaptchaVerifierRef.current
+    })
+  }
+
+  const sendOtpFirebase = async (phone, containerId = 'recaptcha-container') => {
+    const recaptchaVerifier = await setupRecaptcha(containerId)
+    const { signInWithPhoneNumber } = await import('firebase/auth')
+    const fullPhone = '+91' + phone
+    const confirmationResult = await signInWithPhoneNumber(firebaseAuth, fullPhone, recaptchaVerifier)
+    return confirmationResult
+  }
+
+  const verifyOtpFirebase = async (confirmationResult, otp, name = null) => {
+    const result = await confirmationResult.confirm(otp)
+    const idToken = await result.user.getIdToken()
+
+    const payload = { idToken }
+    if (name) payload.name = name
+
+    const response = await api.post('/auth/firebase-verify', payload)
+    const { token, user: userData, isNewUser } = response.data
+
+    if (token) {
+      localStorage.setItem('token', token)
+      setUser(userData)
+    }
+
+    return { userData, isNewUser }
+  }
+
+  // --- Mock mode ---
+  const sendOtpMock = async (phone) => {
+    await api.post('/auth/mock-send-otp', { phone })
+    // Return an object with _mockPhone so verifyOtp can read it back
+    return { _mockPhone: phone }
+  }
+
+  const verifyOtpMock = async (confirmationResult, otp, name = null) => {
+    const phone = confirmationResult._mockPhone
     const payload = { phone, otp }
     if (name) payload.name = name
 
-    const response = await api.post('/auth/verify-otp', payload)
-    const { token, user: userData } = response.data
+    const response = await api.post('/auth/mock-verify', payload)
+    const { token, user: userData, isNewUser } = response.data
 
-    localStorage.setItem('token', token)
-    setUser(userData)
+    if (token) {
+      localStorage.setItem('token', token)
+      setUser(userData)
+    }
 
-    return userData
+    return { userData, isNewUser }
   }
 
-  const logout = () => {
+  // --- Unified interface ---
+  const sendOtp = features.firebase ? sendOtpFirebase : sendOtpMock
+  const verifyOtp = features.firebase ? verifyOtpFirebase : verifyOtpMock
+
+  const logout = async () => {
     localStorage.removeItem('token')
     setUser(null)
-  }
-
-  const sendOtp = async (phone) => {
-    const response = await api.post('/auth/send-otp', { phone })
-    return response.data
+    if (features.firebase && firebaseAuth) {
+      try {
+        const { signOut } = await import('firebase/auth')
+        await signOut(firebaseAuth)
+      } catch (error) {
+        // Firebase signout failure is non-critical
+      }
+    }
   }
 
   return (
     <AuthContext.Provider value={{
       user,
       loading,
-      login,
-      logout,
+      authMode,
       sendOtp,
+      verifyOtp,
+      logout,
       isAuthenticated: !!user
     }}>
       {children}

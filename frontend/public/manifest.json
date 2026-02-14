@@ -1,0 +1,17 @@
+{
+  "name": "TagSphere - Vehicle Contact Platform",
+  "short_name": "TagSphere",
+  "description": "Contact vehicle owners instantly via QR code or vehicle number",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

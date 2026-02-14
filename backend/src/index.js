@@ -1,5 +1,9 @@
 require('dotenv').config();
 
+// Feature flags (validates credentials if enabled)
+const features = require('./config/features');
+console.log(`Features: firebase=${features.firebase}, razorpay=${features.razorpay}, notifications=${features.notifications}, calls=${features.calls}`);
+
 // Validate required environment variables at startup
 const requiredEnv = ['MONGODB_URI', 'JWT_SECRET', 'ENCRYPTION_KEY'];
 for (const key of requiredEnv) {
@@ -24,6 +28,7 @@ const authRoutes = require('./routes/auth');
 const vehicleRoutes = require('./routes/vehicle');
 const scanRoutes = require('./routes/scan');
 const adminRoutes = require('./routes/admin');
+const subscriptionRoutes = require('./routes/subscription');
 
 const app = express();
 
@@ -90,6 +95,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/vehicle', vehicleRoutes);
 app.use('/api/scan', scanRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/subscription', subscriptionRoutes);
 
 // 404 handler
 app.use((req, res) => {
